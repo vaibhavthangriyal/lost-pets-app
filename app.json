@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Pawprint",
+    "slug": "pawprint-android",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": { "package": "com.pawprint.lostpets", "permissions": ["INTERNET", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"] },
+    "plugins": ["expo-secure-store", ["expo-location", { "locationWhenInUsePermission": "Allow Pawprint to find posts near you and set a location for your post." }], ["expo-build-properties", { "android": { "usesCleartextTraffic": true } }]]
+  }
+}
