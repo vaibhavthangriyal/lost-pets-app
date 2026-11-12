@@ -9,7 +9,7 @@ import { Button, ErrorText, Field, Note, ScreenModal, Select } from './ui';
 export function PostForm({ token, onClose, onCreated }: { token: string; onClose: () => void; onCreated: () => void }) {
   const [type, setType] = useState<PostType>('lost'); const [title, setTitle] = useState(''); const [description, setDescription] = useState(''); const [species, setSpecies] = useState(''); const [breed, setBreed] = useState(''); const [photos, setPhotos] = useState<DocumentPicker.DocumentPickerAsset[]>([]); const [relatedPostId, setRelatedPostId] = useState(''); const [occurredAt, setOccurredAt] = useState(new Date().toISOString().slice(0, 16) + 'Z');
   const [latitude, setLatitude] = useState(''); const [longitude, setLongitude] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  const [metadata, setMetadata] = useState<Metadata>({ petTypes: [], postTypes: [], breeds: [] });
+  const [metadata, setMetadata] = useState<Metadata>({ petTypes: [], postTypes: [], breeds: [], currencies: [] });
   useEffect(() => { let active = true; api<Metadata>('/meta').then(data => { if (active) setMetadata(data); }).catch(err => { if (active) setError(err.message); }); return () => { active = false; }; }, []);
   async function pickPhotos() {
     setError('');
