@@ -2,15 +2,20 @@ import * as Location from 'expo-location';
 
 export type PostType = 'lost' | 'sighting' | 'rescue';
 export type Coordinates = { latitude: number; longitude: number };
-export type User = { id: string; displayName: string };
+export type User = { id: string; displayName: string; email?: string };
 export type OwnedPet = { _id: string; name: string; species: string; breed: string; description: string; photos: string[] };
 export type Session = { token: string; user: User };
-export type PetPost = { _id: string; type: PostType; title: string; description: string; species?: string; photos: string[]; location: { coordinates: [number, number] }; occurredAt: string; createdAt: string; status: 'active' | 'resolved'; author: { _id: string; displayName: string } | null; relatedPost?: string };
+export type PetPost = { _id: string; type: PostType; title: string; description: string; species?: string; breed?: string; photos: string[]; location: { coordinates: [number, number] }; occurredAt: string; createdAt: string; status: 'active' | 'resolved'; author: { _id: string; displayName: string } | null; relatedPost?: string };
+export type MetaOption = { value: string; label: string };
+export type Metadata = { petTypes: MetaOption[]; postTypes: MetaOption[]; breeds: (MetaOption & { petType?: string })[] };
 export type Comment = { _id: string; text: string; author: { _id: string; displayName: string } | null; createdAt: string; replies?: Comment[] };
-export type AlertPreference = { location: { coordinates: [number, number] }; radiusKm: number; types: PostType[] };
+export type NotificationLocation = { _id: string; name: string; location: { coordinates: [number, number] }; radiusKm: number; types: PostType[]; active: boolean };
+export type AppNotification = { _id: string; post: string; title: string; body: string; readAt?: string; openedAt?: string; createdAt: string };
 export const types: PostType[] = ['lost', 'sighting', 'rescue'];
 export const labels: Record<PostType, string> = { lost: 'Lost pet', sighting: 'Sighting', rescue: 'Found stray' };
 const baseUrl = (process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000/api').replace(/\/$/, '');
+export const apiOrigin = baseUrl.replace(/\/api$/, '');
+export function mediaUrl(url: string) { return url.startsWith('/') ? `${baseUrl.replace(/\/api$/, '')}${url}` : url; }
 
 export async function api<T>(path: string, options: { method?: string; body?: unknown; token?: string } = {}): Promise<T> {
   let response: Response;

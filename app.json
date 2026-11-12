@@ -3,6 +3,7 @@
     "name": "Pawprint",
     "slug": "pawprint-android",
     "version": "1.0.0",
+    "scheme": "pawprint",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "android": {
@@ -29,7 +30,8 @@
           }
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-notifications"
     ]
   }
 }
