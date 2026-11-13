@@ -1,47 +1,39 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { fetch as expoFetch } from 'expo/fetch';
 import React, { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { api, Metadata, parseCoordinates, PostType } from '../api';
 import { LocationFields } from './location-fields';
-import { Button, ErrorText, Field, Note, ScreenModal, Select } from './ui';
+import { Button, colors, ErrorText, Field, Note, ScreenModal, Select } from './ui';
 
-export function PostForm({ token, onClose, onCreated }: { token: string; onClose: () => void; onCreated: () => void }) {
-  const [type, setType] = useState<PostType>('lost'); const [title, setTitle] = useState(''); const [description, setDescription] = useState(''); const [species, setSpecies] = useState(''); const [breed, setBreed] = useState(''); const [photos, setPhotos] = useState<DocumentPicker.DocumentPickerAsset[]>([]); const [relatedPostId, setRelatedPostId] = useState(''); const [occurredAt, setOccurredAt] = useState(new Date().toISOString().slice(0, 16) + 'Z');
+export function PostForm({ token, initialType = 'lost', onClose, onCreated }: { token: string; initialType?: PostType; onClose: () => void; onCreated: () => void }) {
+  const [type, setType] = useState<PostType>(initialType); const [title, setTitle] = useState(''); const [description, setDescription] = useState(''); const [species, setSpecies] = useState(''); const [breed, setBreed] = useState(''); const [photos, setPhotos] = useState<DocumentPicker.DocumentPickerAsset[]>([]); const [relatedPostId, setRelatedPostId] = useState(''); const [occurredAt, setOccurredAt] = useState(new Date().toISOString().slice(0, 16) + 'Z');
   const [latitude, setLatitude] = useState(''); const [longitude, setLongitude] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const [metadata, setMetadata] = useState<Metadata>({ petTypes: [], postTypes: [], breeds: [], currencies: [] });
   useEffect(() => { let active = true; api<Metadata>('/meta').then(data => { if (active) setMetadata(data); }).catch(err => { if (active) setError(err.message); }); return () => { active = false; }; }, []);
-  async function pickPhotos() {
-    setError('');
-    try { const result = await DocumentPicker.getDocumentAsync({ type: 'image/*', multiple: true, copyToCacheDirectory: true }); if (!result.canceled) { if (result.assets.length > 10) throw new Error('You can add up to 10 photos.'); setPhotos(result.assets); } }
-    catch (err) { setError((err as Error).message || 'Could not select photos.'); }
-  }
+  async function pickPhotos() { setError(''); try { const result = await DocumentPicker.getDocumentAsync({ type: 'image/*', multiple: true, copyToCacheDirectory: true }); if (!result.canceled) { if (result.assets.length > 10) throw new Error('You can add up to 10 photos.'); setPhotos(result.assets); } } catch (err) { setError((err as Error).message || 'Could not select photos.'); } }
   async function submit() {
     setError(''); setBusy(true);
     try {
-      const location = parseCoordinates(latitude, longitude);
-      if (!title.trim() || !description.trim()) throw new Error('Please add a title and description.');
-      const date = new Date(occurredAt);
-      if (!Number.isFinite(date.getTime())) throw new Error('Enter a valid date and time in ISO format.');
+      const location = parseCoordinates(latitude, longitude); if (!title.trim() || !description.trim()) throw new Error('Please add a title and description.'); const date = new Date(occurredAt); if (!Number.isFinite(date.getTime())) throw new Error('Enter a valid date and time in ISO format.');
       const photoFileIds: string[] = [];
-      for (const photo of photos) {
-        const body = new File(photo.uri); const size = photo.size ?? body.size; const mimeType = photo.mimeType || body.type;
-        if (!size || size > 104857600) throw new Error(`${photo.name} must be non-empty and no larger than 100 MiB.`);
-        if (!mimeType?.startsWith('image/')) throw new Error(`${photo.name} is not an image.`);
-        const request = await api<{ file: { id: string }; upload: { url: string; method: string; headers: Record<string, string> } }>('/files/upload-url', { method: 'POST', token, body: { filename: photo.name, mimeType, size } });
-        const response = await expoFetch(request.upload.url, { method: request.upload.method, headers: request.upload.headers, body });
-        if (!response.ok) throw new Error(`Could not upload ${photo.name} (HTTP ${response.status}).`);
-        await api(`/files/${request.file.id}/confirm`, { method: 'POST', token });
-        photoFileIds.push(request.file.id);
-      }
-      await api('/posts', { method: 'POST', token, body: { type, title: title.trim(), description: description.trim(), ...(species ? { species } : {}), ...(breed ? { breed } : {}), photoFileIds, location, occurredAt: date.toISOString(), ...(type === 'sighting' && relatedPostId.trim() ? { relatedPostId: relatedPostId.trim() } : {}) } });
-      onCreated();
+      for (const photo of photos) { const body = new File(photo.uri); const size = photo.size ?? body.size; const mimeType = photo.mimeType || body.type; if (!size || size > 104857600) throw new Error(`${photo.name} must be non-empty and no larger than 100 MiB.`); if (!mimeType?.startsWith('image/')) throw new Error(`${photo.name} is not an image.`); const request = await api<{ file: { id: string }; upload: { url: string; method: string; headers: Record<string, string> } }>('/files/upload-url', { method: 'POST', token, body: { filename: photo.name, mimeType, size } }); const response = await expoFetch(request.upload.url, { method: request.upload.method, headers: request.upload.headers, body }); if (!response.ok) throw new Error(`Could not upload ${photo.name} (HTTP ${response.status}).`); await api(`/files/${request.file.id}/confirm`, { method: 'POST', token }); photoFileIds.push(request.file.id); }
+      await api('/posts', { method: 'POST', token, body: { type, title: title.trim(), description: description.trim(), ...(species ? { species } : {}), ...(breed ? { breed } : {}), photoFileIds, location, occurredAt: date.toISOString(), ...(type === 'sighting' && relatedPostId.trim() ? { relatedPostId: relatedPostId.trim() } : {}) } }); onCreated();
     } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   }
-  return <ScreenModal visible title="Create a post" subtitle="A little detail can make a big difference." onClose={onClose}>
-    <ErrorText message={error}/><Select label="Post type" value={type} options={metadata.postTypes} placeholder="Select post type" onChange={value => setType(value as PostType)}/>
-    <Field label="Title" value={title} onChangeText={setTitle} maxLength={120} placeholder="Give your post a clear title"/><Field label="Description" value={description} onChangeText={setDescription} maxLength={5000} multiline placeholder="Share identifying details and anything else that could help."/><Select label="Animal type (optional)" value={species} options={[{ value: '', label: 'No animal type' }, ...metadata.petTypes]} placeholder="Select animal type" onChange={value => { setSpecies(value); setBreed(''); }}/><Select label="Breed (optional)" value={breed} options={[{ value: '', label: 'No breed' }, ...metadata.breeds.filter(option => option.petType === species)]} placeholder={species ? 'Select breed' : 'Select animal type first'} onChange={setBreed} disabled={!species || !metadata.breeds.some(option => option.petType === species)}/><Field label="When did it happen? (UTC)" value={occurredAt} onChangeText={setOccurredAt} autoCapitalize="none" placeholder="2026-11-08T10:00Z"/><Note>Use ISO format, for example 2026-11-08T10:00Z. The pre-filled value is the current time in UTC.</Note>
-    <LocationFields {...{ latitude, longitude, setLatitude, setLongitude }}/><Note>The location you submit is visible to everyone.</Note><Button title={photos.length ? `${photos.length} photo${photos.length === 1 ? '' : 's'} selected` : 'Choose photos (optional)'} onPress={pickPhotos} disabled={busy} secondary/><Note>Choose up to 10 images. They will be uploaded when you publish the post.</Note>{type === 'sighting' && <Field label="Related lost post ID (optional)" value={relatedPostId} onChangeText={setRelatedPostId} autoCapitalize="none" placeholder="Paste the lost post ID"/>}
-    <Button title={busy ? 'Publishing...' : 'Publish post'} onPress={submit} disabled={busy}/>
+  const typeCards: { type: PostType; title: string; caption: string; icon: 'alert-circle-outline' | 'paw' | 'eye-outline' }[] = [
+    { type: 'lost', title: 'Lost Pet', caption: 'My pet is missing', icon: 'alert-circle-outline' }, { type: 'rescue', title: 'Found Pet', caption: 'I found a stray pet', icon: 'paw' }, { type: 'sighting', title: 'Sighting', caption: 'I saw a missing pet', icon: 'eye-outline' },
+  ];
+  return <ScreenModal visible title={type === 'lost' ? 'Report Lost Pet' : type === 'rescue' ? 'Report Found Pet' : 'Report a Sighting'} subtitle="Help the community act quickly" onClose={onClose}>
+    <View style={styles.progress}><View style={styles.progressActive}/><View style={styles.progressActive}/><View style={styles.progressInactive}/></View><Text style={styles.sectionTitle}>What happened?</Text><View style={styles.types}>{typeCards.map(item => <Pressable key={item.type} onPress={() => setType(item.type)} style={[styles.typeCard, type === item.type && styles.typeActive]}><View style={[styles.typeIcon, type === item.type && styles.typeIconActive]}><MaterialCommunityIcons name={item.icon} size={22} color={type === item.type ? colors.white : colors.purple}/></View><Text style={[styles.typeTitle, type === item.type && styles.typeTitleActive]}>{item.title}</Text><Text style={[styles.typeCaption, type === item.type && styles.typeCaptionActive]}>{item.caption}</Text></Pressable>)}</View>
+    <ErrorText message={error}/><Text style={styles.sectionTitle}>Pet details</Text><Field label="Pet name or clear title" value={title} onChangeText={setTitle} maxLength={120} placeholder="e.g. Missing Luna"/><Field label="Description" value={description} onChangeText={setDescription} maxLength={5000} multiline placeholder="Color, markings, collar, temperament and anything that may help."/><Select label="Animal type (optional)" value={species} options={[{ value: '', label: 'No animal type' }, ...metadata.petTypes]} placeholder="Select animal type" onChange={value => { setSpecies(value); setBreed(''); }}/><Select label="Breed (optional)" value={breed} options={[{ value: '', label: 'No breed' }, ...metadata.breeds.filter(option => option.petType === species)]} placeholder={species ? 'Select breed' : 'Select animal type first'} onChange={setBreed} disabled={!species || !metadata.breeds.some(option => option.petType === species)}/>
+    <Pressable onPress={pickPhotos} disabled={busy} style={styles.upload}><View style={styles.uploadIcon}><MaterialCommunityIcons name="camera-plus-outline" size={28} color={colors.purple}/></View><Text style={styles.uploadTitle}>{photos.length ? `${photos.length} photo${photos.length === 1 ? '' : 's'} ready` : 'Add clear photos'}</Text><Text style={styles.uploadText}>Choose up to 10 images from your device</Text></Pressable>
+    <Text style={styles.sectionTitle}>Last seen details</Text><Field label="When did it happen? (UTC)" value={occurredAt} onChangeText={setOccurredAt} autoCapitalize="none" placeholder="2026-11-08T10:00Z"/><LocationFields {...{ latitude, longitude, setLatitude, setLongitude }}/><Note>The submitted location is public so nearby helpers can respond.</Note>{type === 'sighting' && <Field label="Related lost post ID (optional)" value={relatedPostId} onChangeText={setRelatedPostId} autoCapitalize="none" placeholder="Paste the lost post ID"/>}<Button title={busy ? 'Publishing alert...' : 'Publish community alert'} icon="send" onPress={submit} disabled={busy}/>
   </ScreenModal>;
 }
+
+const styles = StyleSheet.create({
+  progress: { flexDirection: 'row', gap: 7 }, progressActive: { flex: 1, height: 5, borderRadius: 4, backgroundColor: colors.purple }, progressInactive: { flex: 1, height: 5, borderRadius: 4, backgroundColor: colors.border }, sectionTitle: { fontSize: 18, fontWeight: '900', color: colors.ink, marginTop: 4 }, types: { flexDirection: 'row', gap: 8 }, typeCard: { flex: 1, minHeight: 122, padding: 10, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', gap: 4 }, typeActive: { backgroundColor: colors.purple, borderColor: colors.purple }, typeIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.purpleSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 2 }, typeIconActive: { backgroundColor: 'rgba(255,255,255,.2)' }, typeTitle: { fontSize: 13, color: colors.ink, fontWeight: '900', textAlign: 'center' }, typeTitleActive: { color: colors.white }, typeCaption: { fontSize: 10, lineHeight: 14, color: colors.muted, textAlign: 'center' }, typeCaptionActive: { color: '#DED5FF' }, upload: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#B8A8F5', backgroundColor: colors.purpleSoft, borderRadius: 18, padding: 22, alignItems: 'center', gap: 5 }, uploadIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', marginBottom: 3 }, uploadTitle: { color: colors.purple, fontWeight: '900', fontSize: 15 }, uploadText: { color: colors.muted, fontSize: 12 },
+});

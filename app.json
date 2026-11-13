@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Pawprint",
+    "name": "LostPetFinder",
     "slug": "pawprint-android",
     "version": "1.0.0",
     "scheme": "pawprint",
@@ -19,7 +19,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Pawprint to find posts near you and set a location for your post."
+          "locationWhenInUsePermission": "Allow LostPetFinder to show nearby alerts and set a location for your post."
         }
       ],
       [
@@ -31,7 +31,8 @@
         }
       ],
       "expo-status-bar",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-sharing"
     ]
   }
 }
