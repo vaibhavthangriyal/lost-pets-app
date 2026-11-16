@@ -6,7 +6,7 @@ Expo / React Native client for the NestJS API. Visitors can browse posts, filter
 
 - **Public community feed:** browse and filter lost-pet, sighting, and found-stray posts, load more results, and view post details without an account.
 - **Nearby search:** use a one-time foreground location lookup and a chosen radius to find nearby posts. Post locations can be opened in an external map.
-- **OTP sign-in:** authenticate through the backend's email OTP flow and store the session with Expo SecureStore. The backend currently prints codes to its development console only.
+- **OTP sign-in:** authenticate through the backend's email or SMS OTP flow and store the session with Expo SecureStore. SMS can use an optional email fallback.
 - **Posts and comments:** create the three post types, view and add public comments, let the post owner reply, and let the owner resolve or reopen a post.
 - **My pets:** privately add, view, edit, and remove saved pet profiles.
 - **My files:** pick a device file, upload it using a signed GCS URL, confirm it, retry confirmation, and open a signed download link.
@@ -25,7 +25,7 @@ Signed-in users can use **My files** to select files, upload directly to GCS, re
 
 ## Current backend limitations
 
-OTP codes are printed to the backend console in development and are not delivered by email or SMS. Posts currently accept public image URLs, not device photo uploads. Coordinates and comments on posts are public. Alert preferences can be saved or removed, but push notifications, automatic background location tracking, and notification matching have not been implemented in the backend or this app.
+Without provider credentials, development OTP codes are printed to the backend console. With SMTP and Twilio credentials, the backend delivers email and SMS OTPs, with email fallback for SMS failures. Posts currently accept public image URLs, not device photo uploads. Coordinates and comments on posts are public. Alert preferences can be saved or removed, but push notifications, automatic background location tracking, and notification matching have not been implemented in the backend or this app.
 
 ## Checks
 
