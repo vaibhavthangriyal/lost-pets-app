@@ -9,7 +9,7 @@ export function AuthScreen({ visible, onClose, onSignedIn }: { visible: boolean;
     setError(''); setBusy(true);
     try {
       const identity = mode === 'email' ? { email: email.trim() } : { phoneNumber: phoneNumber.trim(), ...(email.trim() ? { email: email.trim() } : {}) };
-      if (step === 'email') { await api('/auth/otp/request', { method: 'POST', body: { channel: mode, ...identity } }); setStep('code'); }
+      if (step === 'email') { const result = await api<{ channel: 'email' | 'sms' }>('/auth/otp/request', { method: 'POST', body: { channel: mode, ...identity } }); setMode(result.channel); setStep('code'); }
       else { const result = await api<{ accessToken: string; user: User }>('/auth/otp/verify', { method: 'POST', body: { channel: mode, ...identity, code, displayName: name.trim() } }); await onSignedIn(result.accessToken, result.user); setStep('email'); setCode(''); }
     } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   }
